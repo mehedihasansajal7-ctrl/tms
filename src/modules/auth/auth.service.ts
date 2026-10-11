@@ -1,6 +1,6 @@
+import { AppError, ErrorCodes } from "@/lib/errors";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { AppError, ErrorCodes } from "@/lib/errors";
 import { ROLES } from "@/lib/constants";
 
 export function hashPassword(plain: string): string {

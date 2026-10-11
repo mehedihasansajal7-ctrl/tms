@@ -1,10 +1,11 @@
+import { AppError } from "@/lib/errors";
 import { handle, json, readJson } from "@/lib/api";
 import { requireSession } from "@/lib/session";
 import { createRequest, createRequestSchema, listRequests } from "@/modules/requests/request.service";
 
 export const POST = handle(async (req) => {
   const session = await requireSession();
-  if (session.kind !== "user") throw Object.assign(new Error("Only users can create requests"), { status: 403 });
+  if (session.kind !== "user") throw new AppError("Only users can create requests", 403, "FORBIDDEN");
   const body = createRequestSchema.parse(await readJson(req));
   const request = await createRequest(body, { id: session.sub, name: session.name });
   return json(request, 201);
@@ -31,5 +32,5 @@ export const GET = handle(async (req) => {
   if (session.kind === "user") {
     return json(await listRequests({ ...filters, requesterId: session.sub }));
   }
-  throw Object.assign(new Error("Drivers use the driver trips endpoint"), { status: 403 });
+  throw new AppError("Drivers use the driver trips endpoint", 403, "FORBIDDEN");
 });

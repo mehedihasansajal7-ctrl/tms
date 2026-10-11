@@ -1,3 +1,4 @@
+import { AppError } from "@/lib/errors";
 import { handle, json } from "@/lib/api";
 import { requireSession } from "@/lib/session";
 import { getDriver } from "@/modules/drivers/driver.service";
@@ -5,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 
 export const GET = handle(async () => {
   const session = await requireSession();
-  if (session.kind !== "driver") throw Object.assign(new Error("Driver only"), { status: 403 });
+  if (session.kind !== "driver") throw new AppError("Driver only", 403, "FORBIDDEN");
   const driver = await getDriver(session.sub);
 
   const assignments = await prisma.driverAssignment.findMany({

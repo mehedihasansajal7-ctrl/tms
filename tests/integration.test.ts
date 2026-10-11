@@ -1,10 +1,9 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { execSync } from "node:child_process";
-import path from "node:path";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-const TEST_DB = "file:./test.db";
+const TEST_DB = "postgresql://postgres:postgres@localhost:5432/tms_test";
 process.env.DATABASE_URL = TEST_DB;
 process.env.AUTH_SECRET = process.env.AUTH_SECRET || "test-secret";
 
@@ -21,7 +20,7 @@ let awaitDriverId = "";
 
 before(async () => {
   const env = { ...process.env, DATABASE_URL: TEST_DB };
-  execSync("npx prisma db push --skip-generate --accept-data-loss", { env, stdio: "ignore", cwd: process.cwd() });
+  execSync("npx prisma db push --skip-generate --force-reset --accept-data-loss", { env, stdio: "ignore", cwd: process.cwd() });
   execSync("npx tsx prisma/seed.ts", { env, stdio: "ignore", cwd: process.cwd() });
 
   const prismaMod = await import("../src/lib/prisma");
@@ -49,11 +48,6 @@ before(async () => {
 
 after(async () => {
   await prisma.$disconnect();
-  const fs = await import("node:fs");
-  for (const f of ["test.db", "test.db-journal"]) {
-    const p = path.join(process.cwd(), f);
-    try { if (fs.existsSync(p)) fs.unlinkSync(p); } catch {}
-  }
 });
 
 async function byEmail(model: string, email: string): Promise<string> {
