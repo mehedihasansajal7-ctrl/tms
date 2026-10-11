@@ -1,29 +1,24 @@
 import { z } from "zod";
 import { cookies } from "next/headers";
 import { handle, json, readJson } from "@/lib/api";
-import { authenticateUser, authenticateDriver } from "@/modules/auth/auth.service";
-import { signSession, SESSION_COOKIE, SessionPayload } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { requireSession } from "@/lib/session";
-import { ROLES } from "@/lib/constants";
+import { authenticate } from "@/modules/auth/auth.service";
+import { signSession, SESSION_COOKIE, type SessionPayload } from "@/lib/auth";
 
 const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
-  kind: z.enum(["user", "driver"]).default("user"),
 });
 
 export const POST = handle(async (req) => {
   const body = loginSchema.parse(await readJson(req));
 
-  let payload: SessionPayload;
-  if (body.kind === "driver") {
-    const driver = await authenticateDriver(body.email, body.password);
-    payload = { sub: driver.id, kind: "driver", role: ROLES.DRIVER, name: driver.name };
-  } else {
-    const user = await authenticateUser(body.email, body.password);
-    payload = { sub: user.id, kind: "user", role: user.role, name: user.name };
-  }
+  const account = await authenticate(body.email, body.password);
+  const payload: SessionPayload = {
+    sub: account.id,
+    kind: account.kind,
+    role: account.role,
+    name: account.name,
+  };
 
   const token = await signSession(payload);
   const store = await cookies();

@@ -11,50 +11,36 @@ export function verifyPassword(plain: string, hash: string): boolean {
   return bcrypt.compareSync(plain, hash);
 }
 
-export interface AuthUser {
+export interface Authenticated {
   id: string;
   name: string;
   email: string;
+  kind: "user" | "driver";
   role: string;
-  status: string;
 }
 
-export interface AuthDriver {
-  id: string;
-  name: string;
-  email: string;
-  status: string;
-  operationalStatus: string;
-}
+// Auto-detect the account type from the email: look up the email in the User
+// table (admin/staff), then the Driver table. Whoever matches wins.
+export async function authenticate(email: string, password: string): Promise<Authenticated> {
+  const normalized = email.trim().toLowerCase();
 
-export async function authenticateUser(email: string, password: string): Promise<AuthUser> {
-  const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
-  if (!user || !verifyPassword(password, user.passwordHash)) {
-    throw new AppError("Invalid email or password", 401, ErrorCodes.UNAUTHORIZED);
+  const user = await prisma.user.findUnique({ where: { email: normalized } });
+  if (user && verifyPassword(password, user.passwordHash)) {
+    if (user.status !== "ACTIVE") {
+      throw new AppError("This account is inactive. Contact an administrator.", 403, ErrorCodes.FORBIDDEN);
+    }
+    return { id: user.id, name: user.name, email: user.email, kind: "user", role: user.role };
   }
-  if (user.status !== "ACTIVE") {
-    throw new AppError("This account is inactive. Contact an administrator.", 403, ErrorCodes.FORBIDDEN);
-  }
-  return { id: user.id, name: user.name, email: user.email, role: user.role, status: user.status };
-}
 
-export async function authenticateDriver(email: string, password: string): Promise<AuthDriver> {
-  const driver = await prisma.driver.findUnique({
-    where: { email: email.trim().toLowerCase() },
-  });
-  if (!driver || !verifyPassword(password, driver.passwordHash)) {
-    throw new AppError("Invalid email or password", 401, ErrorCodes.UNAUTHORIZED);
+  const driver = await prisma.driver.findUnique({ where: { email: normalized } });
+  if (driver && verifyPassword(password, driver.passwordHash)) {
+    if (driver.status !== "ACTIVE") {
+      throw new AppError("This account is inactive. Contact an administrator.", 403, ErrorCodes.FORBIDDEN);
+    }
+    return { id: driver.id, name: driver.name, email: driver.email, kind: "driver", role: ROLES.DRIVER };
   }
-  if (driver.status !== "ACTIVE") {
-    throw new AppError("This account is inactive. Contact an administrator.", 403, ErrorCodes.FORBIDDEN);
-  }
-  return {
-    id: driver.id,
-    name: driver.name,
-    email: driver.email,
-    status: driver.status,
-    operationalStatus: driver.operationalStatus,
-  };
+
+  throw new AppError("Invalid email or password", 401, ErrorCodes.UNAUTHORIZED);
 }
 
 // Validate that a user is allowed to exist (used by direct creation + import).

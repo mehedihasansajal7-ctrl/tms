@@ -7,7 +7,6 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [kind, setKind] = useState<"user" | "driver">("user");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -19,7 +18,7 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, kind }),
+        body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -40,21 +39,6 @@ export default function LoginPage() {
       <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <h1 className="text-xl font-bold text-slate-900">Transport Management</h1>
         <p className="mt-1 text-sm text-slate-500">Sign in to continue</p>
-
-        <div className="mt-5 grid grid-cols-2 gap-2">
-          {(["user", "driver"] as const).map((k) => (
-            <button
-              key={k}
-              type="button"
-              onClick={() => setKind(k)}
-              className={`rounded-md px-3 py-2 text-sm font-medium ${
-                kind === k ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600"
-              }`}
-            >
-              {k === "user" ? "Staff / Admin" : "Driver"}
-            </button>
-          ))}
-        </div>
 
         <form onSubmit={submit} className="mt-5 space-y-4">
           <div>
@@ -92,7 +76,9 @@ export default function LoginPage() {
         </form>
 
         <div className="mt-4 rounded-md bg-slate-50 p-3 text-xs text-slate-500">
-          Demo: <span className="font-mono">admin@tms.local / admin1234</span>
+          Admin: <span className="font-mono">admin@tms.local / admin1234</span>
+          <br />
+          User: <span className="font-mono">rahim@company.com / password123</span>
           <br />
           Driver: <span className="font-mono">driver1@company.com / password123</span>
         </div>

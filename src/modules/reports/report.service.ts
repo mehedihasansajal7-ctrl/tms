@@ -100,7 +100,10 @@ export async function getRequestsReport(from: Date, to: Date, groupBy: "day" | "
 
   const buckets: Record<string, number> = {};
   for (const r of rows) {
-    const key = groupBy === "day" ? r.startDateTime.toISOString().slice(0, 10) : r.startDateTime.toISOString().slice(0, 7);
+    const key =
+      groupBy === "day"
+        ? `${r.startDateTime.getFullYear()}-${String(r.startDateTime.getMonth() + 1).padStart(2, "0")}-${String(r.startDateTime.getDate()).padStart(2, "0")}`
+        : `${r.startDateTime.getFullYear()}-${String(r.startDateTime.getMonth() + 1).padStart(2, "0")}`;
     buckets[key] = (buckets[key] || 0) + 1;
   }
   return { groupBy, total: rows.length, rows: buckets };

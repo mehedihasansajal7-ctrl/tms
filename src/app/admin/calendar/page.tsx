@@ -9,6 +9,12 @@ function startOfMonth(d: Date) {
 function endOfMonth(d: Date) {
   return new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
 }
+function localDateKey(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+function localMonthKey(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
 
 export default async function AdminCalendar({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await requireAdminPage();
@@ -30,7 +36,7 @@ export default async function AdminCalendar({ searchParams }: { searchParams: Pr
 
   const byDay = new Map<string, typeof requests>();
   for (const r of requests) {
-    const key = r.startDateTime.toISOString().slice(0, 10);
+    const key = localDateKey(r.startDateTime);
     if (!byDay.has(key)) byDay.set(key, []);
     byDay.get(key)!.push(r);
   }
@@ -38,8 +44,8 @@ export default async function AdminCalendar({ searchParams }: { searchParams: Pr
   const daysInMonth = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
   const firstDow = monthStart.getDay();
 
-  const prevMonth = new Date(base.getFullYear(), base.getMonth() - 1, 1).toISOString().slice(0, 7);
-  const nextMonth = new Date(base.getFullYear(), base.getMonth() + 1, 1).toISOString().slice(0, 7);
+  const prevMonth = localMonthKey(new Date(base.getFullYear(), base.getMonth() - 1, 1));
+  const nextMonth = localMonthKey(new Date(base.getFullYear(), base.getMonth() + 1, 1));
   const monthLabel = base.toLocaleDateString(undefined, { month: "long", year: "numeric" });
 
   const cells: (number | null)[] = [...Array(firstDow).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
@@ -63,8 +69,7 @@ export default async function AdminCalendar({ searchParams }: { searchParams: Pr
           <div className="grid grid-cols-7">
             {cells.map((day, i) => {
               if (day === null) return <div key={`e${i}`} className="min-h-20 border-b border-r border-slate-100" />;
-              const dateKey = `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-              const items = byDay.get(dateKey) ?? [];
+              const dateKey = `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;              const items = byDay.get(dateKey) ?? [];
               return (
                 <div key={day} className="min-h-20 border-b border-r border-slate-100 p-1 text-xs">
                   <div className="text-slate-400">{day}</div>
