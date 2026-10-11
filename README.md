@@ -32,7 +32,7 @@ reports, and an immutable audit trail.
 
 - **Frontend/API:** Next.js 16 (App Router, Route Handlers, `proxy` auth gate)
 - **Language:** TypeScript
-- **Database:** Prisma ORM — SQLite by default, one-line portable to PostgreSQL
+- **Database:** PostgreSQL 17 (Docker) via Prisma ORM
 - **Auth:** `jose` JWT in an httpOnly cookie + `bcryptjs` password hashing
 - **Validation:** Zod
 - **File import:** `xlsx` (SheetJS) for `.xlsx` / `.csv`
@@ -42,19 +42,21 @@ reports, and an immutable audit trail.
 
 - Node.js ≥ 20.9
 - npm
+- Docker (for PostgreSQL — see `docker-compose.yml`)
 
 ## Getting started
 
 ```bash
 npm install
 
-# 1. Configure environment
-cp .env.example .env            # set DATABASE_URL and AUTH_SECRET
+# 1. Start PostgreSQL (Docker)
+docker compose up -d             # postgres:17 on localhost:5432
 
-# 2. Create the database and apply migrations
-npm run db:migrate              # or: npx prisma migrate dev
+# 2. Configure environment
+cp .env.example .env             # DATABASE_URL + AUTH_SECRET (defaults point at Docker Postgres)
 
-# 3. Seed development data
+# 3. Apply migrations + seed
+npx prisma migrate deploy
 npm run db:seed
 
 # 4. Run
@@ -75,7 +77,7 @@ Open http://localhost:3000 — you'll be redirected to `/login`.
 
 | Variable | Description |
 | --- | --- |
-| `DATABASE_URL` | Prisma connection string (`file:./dev.db` for SQLite, or a Postgres URL) |
+| `DATABASE_URL` | Prisma connection string (defaults to `postgresql://postgres:postgres@localhost:5432/tms`) |
 | `AUTH_SECRET` | Secret used to sign session JWTs (required) |
 | `SESSION_MAX_AGE_SECONDS` | Session cookie lifetime (default `2592000`) |
 
@@ -102,9 +104,9 @@ npm run test
 - `tests/unit.test.ts` — pure business rules: time-range overlap, status
   transitions, trip-state derivation.
 - `tests/integration.test.ts` — end-to-end service flows against a throwaway
-  SQLite DB: approval, rejection, re-approval, assignment, conflict detection,
-  capacity, alternative assignment, cancellation rules, and post-trip
-  `AWAITING_CONFIRMATION`.
+  PostgreSQL DB (`tms_test`): approval, rejection, re-approval, assignment,
+  conflict detection, capacity, alternative assignment, cancellation rules, and
+  post-trip `AWAITING_CONFIRMATION`.
 
 ## Project structure
 
@@ -123,14 +125,17 @@ tms/
 └── README.md
 ```
 
-## Moving to PostgreSQL
+## Docker
 
-1. In `prisma/schema.prisma`, change the datasource `provider` to `"postgresql"`.
-2. Set `DATABASE_URL` to a Postgres connection string.
-3. Run `npx prisma migrate deploy`.
+PostgreSQL runs in Docker (see `docker-compose.yml`):
 
-The string "enum-like" columns map cleanly to native Postgres enums/CHECK
-constraints; no data changes are required.
+```bash
+docker compose up -d       # start PostgreSQL (postgres:17-alpine, port 5432)
+docker compose down        # stop (data persists in the `tms_pgdata` volume)
+```
+
+The Prisma schema uses the `postgresql` provider; the SQLite provider is a
+one-line change away if you ever need an embedded database.
 
 ## Documentation
 
