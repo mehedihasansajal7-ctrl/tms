@@ -1,0 +1,332 @@
+// Transport Management System — Prisma schema
+// SQLite by default. To move to PostgreSQL, change `provider` to "postgresql"
+// and set DATABASE_URL accordingly; the String "enum-like" columns become
+// native enums/CHECK constraints with no data changes required.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// People
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  phone        String?
+  employeeId   String   @unique
+  department   String?
+  designation  String?
+  role         String   @default("USER") // ADMIN | USER
+  status       String   @default("ACTIVE") // ACTIVE | INACTIVE
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  requests       TransportRequest[] @relation("Requester")
+  approvals      RequestApproval[]  @relation("Approver")
+  notifications  Notification[]
+  imports        ImportJob[]        @relation("Uploader")
+
+  @@index([role])
+  @@index([status])
+  @@index([department])
+}
+
+model Driver {
+  id                String   @id @default(cuid())
+  name              String
+  email             String   @unique
+  phone             String?
+  licenseNumber     String   @unique
+  licenseExpiry     DateTime?
+  status            String   @default("ACTIVE") // ACTIVE | INACTIVE
+  operationalStatus String   @default("AWAITING_CONFIRMATION") // AVAILABLE | UNAVAILABLE | AWAITING_CONFIRMATION
+  passwordHash      String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  assignments    DriverAssignment[]
+  availability   DriverAvailabilityHistory[]
+  notifications  Notification[]
+
+  @@index([status])
+  @@index([operationalStatus])
+}
+
+// ---------------------------------------------------------------------------
+// Fleet
+// ---------------------------------------------------------------------------
+
+model VehicleType {
+  id        String   @id @default(cuid())
+  name      String   @unique // SMALL | MEDIUM | LARGE
+  capacity  Int
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vehicles  Vehicle[]
+  requests  TransportRequest[] @relation("RequestedType")
+  assigned  TransportRequest[] @relation("AssignedType")
+}
+
+model Vehicle {
+  id                String   @id @default(cuid())
+  registrationNumber String  @unique
+  vehicleTypeId     String
+  capacity          Int
+  status            String   @default("AVAILABLE") // AVAILABLE | MAINTENANCE | INACTIVE
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  vehicleType VehicleType      @relation(fields: [vehicleTypeId], references: [id])
+  bookings    VehicleBooking[]
+
+  @@index([status])
+  @@index([vehicleTypeId])
+}
+
+// ---------------------------------------------------------------------------
+// Transport requests & lifecycle
+// ---------------------------------------------------------------------------
+
+model TransportRequest {
+  id                      String   @id @default(cuid())
+  requestNumber           String   @unique
+  requesterId             String
+  purpose                 String
+  startDateTime           DateTime
+  endDateTime             DateTime
+  requestedVehicleTypeId  String
+  passengerCount          Int
+  destination             String
+  specialInstructions     String?
+  status                  String   @default("PENDING") // PENDING | APPROVED | ASSIGNED | ON_TRIP | COMPLETED | CANCELLED | REJECTED
+
+  // Approval
+  approvedBy         String?
+  approvedAt         DateTime?
+  approvalComment    String?
+  rejectedBy         String?
+  rejectedAt         DateTime?
+  rejectionReason    String?
+
+  // Assignment (actual vehicle type, for alternative-assignment reporting)
+  assignedVehicleTypeId  String?
+  alternativeReason      String? // REQUESTED_VEHICLE_UNAVAILABLE | ... | OTHER
+  alternativeExplanation String?
+
+  // Cancellation
+  cancelledBy            String?
+  cancelledAt            DateTime?
+  cancellationReason     String?
+  cancellationActorRole  String? // USER | ADMIN
+  cancellationNotes      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  requester        User                  @relation("Requester", fields: [requesterId], references: [id])
+  requestedType    VehicleType           @relation("RequestedType", fields: [requestedVehicleTypeId], references: [id])
+  assignedType     VehicleType?          @relation("AssignedType", fields: [assignedVehicleTypeId], references: [id])
+  passengers       Passenger[]
+  approvals        RequestApproval[]
+  vehicleBookings  VehicleBooking[]
+  driverAssignments DriverAssignment[]
+
+  @@index([status])
+  @@index([requesterId])
+  @@index([startDateTime])
+  @@index([endDateTime])
+}
+
+model RequestApproval {
+  id        String   @id @default(cuid())
+  requestId String
+  action    String   // APPROVED | REJECTED | REOPENED
+  actorId   String
+  reason    String?
+  createdAt DateTime @default(now())
+
+  request TransportRequest @relation(fields: [requestId], references: [id])
+  actor   User             @relation("Approver", fields: [actorId], references: [id])
+
+  @@index([requestId])
+}
+
+model Passenger {
+  id                  String  @id @default(cuid())
+  requestId           String
+  name                String
+  pickupLocation      String
+  destination         String?
+  specialInstructions String?
+  sortOrder           Int     @default(0)
+
+  request TransportRequest @relation(fields: [requestId], references: [id])
+
+  @@index([requestId])
+}
+
+// ---------------------------------------------------------------------------
+// Assignment / bookings
+// ---------------------------------------------------------------------------
+
+model VehicleBooking {
+  id             String   @id @default(cuid())
+  requestId      String
+  vehicleId      String
+  startDateTime  DateTime
+  endDateTime    DateTime
+  status         String   @default("ACTIVE") // ACTIVE | RELEASED | CANCELLED | COMPLETED
+  assignedBy     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  request TransportRequest @relation(fields: [requestId], references: [id])
+  vehicle Vehicle          @relation(fields: [vehicleId], references: [id])
+
+  @@index([requestId])
+  @@index([vehicleId])
+  @@index([status])
+  @@index([startDateTime])
+  @@index([endDateTime])
+}
+
+model DriverAssignment {
+  id             String   @id @default(cuid())
+  requestId      String
+  driverId       String
+  startDateTime  DateTime
+  endDateTime    DateTime
+  status         String   @default("ACTIVE") // ACTIVE | RELEASED | CANCELLED | COMPLETED
+  assignedBy     String?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  request TransportRequest @relation(fields: [requestId], references: [id])
+  driver  Driver           @relation(fields: [driverId], references: [id])
+
+  @@index([requestId])
+  @@index([driverId])
+  @@index([status])
+  @@index([startDateTime])
+  @@index([endDateTime])
+}
+
+// ---------------------------------------------------------------------------
+// Driver availability history
+// ---------------------------------------------------------------------------
+
+model DriverAvailabilityHistory {
+  id             String   @id @default(cuid())
+  driverId       String
+  previousStatus String?
+  newStatus      String
+  reason         String?
+  changedBy      String?
+  createdAt      DateTime @default(now())
+
+  driver Driver @relation(fields: [driverId], references: [id])
+
+  @@index([driverId])
+}
+
+// ---------------------------------------------------------------------------
+// Notifications, audit, imports
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String?
+  driverId  String?
+  type      String
+  title     String
+  message   String
+  refType   String?
+  refId     String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user   User?   @relation(fields: [userId], references: [id])
+  driver Driver? @relation(fields: [driverId], references: [id])
+
+  @@index([userId])
+  @@index([driverId])
+  @@index([readAt])
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorId      String?
+  actorKind    String? // USER | DRIVER | SYSTEM
+  actorName    String?
+  action       String
+  entityType   String
+  entityId     String?
+  previousData String? // JSON
+  newData      String? // JSON
+  reason       String?
+  metadata     String? // JSON
+  createdAt    DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model ImportJob {
+  id             String    @id @default(cuid())
+  fileName       String
+  importType     String // USERS | DRIVERS | VEHICLES | COMBINED
+  uploadedById   String
+  totalRows      Int       @default(0)
+  successfulRows Int       @default(0)
+  failedRows     Int       @default(0)
+  skippedRows    Int       @default(0)
+  updatedRows    Int       @default(0)
+  status         String    @default("PENDING") // PENDING | PROCESSING | COMPLETED | FAILED
+  duplicateMode  String    @default("SKIP") // SKIP | UPDATE | REJECT
+  createdAt      DateTime  @default(now())
+  completedAt    DateTime?
+
+  uploadedBy User        @relation("Uploader", fields: [uploadedById], references: [id])
+  rows       ImportRow[]
+
+  @@index([importType])
+  @@index([status])
+}
+
+model ImportRow {
+  id          String  @id @default(cuid())
+  importJobId String
+  sheet       String?
+  rowNumber   Int
+  valid       Boolean @default(false)
+  status      String  @default("PENDING") // VALID | ERROR | DUPLICATE | SKIPPED | IMPORTED | UPDATED
+  errors      String? // JSON array of error messages
+  data        String? // JSON of the parsed row
+
+  importJob ImportJob @relation(fields: [importJobId], references: [id])
+
+  @@index([importJobId])
+}
+
+// ---------------------------------------------------------------------------
+// Counters (for atomic request-number generation)
+// ---------------------------------------------------------------------------
+
+model Sequence {
+  key   String @id
+  value Int    @default(0)
+}
