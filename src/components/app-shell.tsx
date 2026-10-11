@@ -26,9 +26,8 @@ function navFor(role: string, kind: string): NavItem[] {
     return [{ href: "/driver", label: "My Trips" }];
   }
   return [
-    { href: "/dashboard", label: "Dashboard" },
-    { href: "/requests/new", label: "New Request" },
     { href: "/dashboard", label: "My Requests" },
+    { href: "/requests/new", label: "New Request" },
   ];
 }
 
