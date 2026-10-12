@@ -52,10 +52,10 @@ async function main() {
     prisma.driver.create({
       data: { name, email, phone: `018100000${Math.floor(Math.random() * 90 + 10)}`, licenseNumber: `DL-${Math.random().toString(36).slice(2, 8).toUpperCase()}`, licenseExpiry: new Date(now + days(licenseExpiryDays)), status: "ACTIVE", operationalStatus, passwordHash: hash("password123") },
     });
-  const dAva = await mkDriver("Driver One", "driver1@company.com", "AVAILABLE", 300);
-  const dAva2 = await mkDriver("Driver Two", "driver2@company.com", "AVAILABLE", 500);
-  const dUnavail = await mkDriver("Driver Three", "driver3@company.com", "UNAVAILABLE", 400);
-  const dAwait = await mkDriver("Driver Four", "driver4@company.com", "AWAITING_CONFIRMATION", 600);
+  const dAva = await mkDriver("Rafiqul Islam", "driver1@company.com", "AVAILABLE", 300);
+  const dAva2 = await mkDriver("Salam Khan", "driver2@company.com", "AVAILABLE", 500);
+  const dUnavail = await mkDriver("Jashim Uddin", "driver3@company.com", "UNAVAILABLE", 400);
+  const dAwait = await mkDriver("Mizanur Rahman", "driver4@company.com", "AWAITING_CONFIRMATION", 600);
 
   // --- Vehicles (spec §83) ---
   const v1 = await prisma.vehicle.create({ data: { registrationNumber: "DHA-S-0011", vehicleTypeId: small.id, capacity: 3, status: "AVAILABLE" } });

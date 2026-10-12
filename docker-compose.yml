@@ -17,5 +17,19 @@ services:
       timeout: 5s
       retries: 10
 
+  app:
+    build: .
+    container_name: tms-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/tms
+      AUTH_SECRET: ${AUTH_SECRET:-tms-dev-secret-change-me-in-production-9f8e7d6c5b4a3210}
+      SESSION_MAX_AGE_SECONDS: ${SESSION_MAX_AGE_SECONDS:-2592000}
+    ports:
+      - "3000:3000"
+
 volumes:
   tms_pgdata:
