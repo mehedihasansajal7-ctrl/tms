@@ -69,6 +69,14 @@ export default function ReportsViewer() {
     }
   }
 
+  function exportUrl(format: "csv" | "xlsx") {
+    const params = new URLSearchParams({ format });
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+    if (type === "requests") params.set("groupBy", "status");
+    return `/api/reports/${type}?${params}`;
+  }
+
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold text-slate-900">Reports</h1>
@@ -91,6 +99,8 @@ export default function ReportsViewer() {
         <button onClick={load} disabled={loading} className="rounded-md bg-indigo-600 px-4 py-1.5 text-sm text-white disabled:opacity-50">
           {loading ? "Loading…" : "Run"}
         </button>
+        <a href={exportUrl("csv")} download className="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50">CSV</a>
+        <a href={exportUrl("xlsx")} download className="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50">Excel</a>
       </div>
 
       <div className="rounded-lg border border-slate-200 bg-white p-4">

@@ -49,3 +49,27 @@ export function validateRole(role: string): string {
   if (r !== ROLES.ADMIN && r !== ROLES.USER) return ROLES.USER;
   return r;
 }
+
+// Change the current user's/driver's own password (verifies current one first).
+export async function changePassword(
+  session: { sub: string; kind: string },
+  currentPassword: string,
+  newPassword: string,
+) {
+  if (newPassword.length < 6) {
+    throw new AppError("New password must be at least 6 characters", 400, ErrorCodes.VALIDATION);
+  }
+  if (session.kind === "driver") {
+    const driver = await prisma.driver.findUnique({ where: { id: session.sub } });
+    if (!driver || !verifyPassword(currentPassword, driver.passwordHash)) {
+      throw new AppError("Current password is incorrect", 400, ErrorCodes.VALIDATION);
+    }
+    await prisma.driver.update({ where: { id: session.sub }, data: { passwordHash: hashPassword(newPassword) } });
+  } else {
+    const user = await prisma.user.findUnique({ where: { id: session.sub } });
+    if (!user || !verifyPassword(currentPassword, user.passwordHash)) {
+      throw new AppError("Current password is incorrect", 400, ErrorCodes.VALIDATION);
+    }
+    await prisma.user.update({ where: { id: session.sub }, data: { passwordHash: hashPassword(newPassword) } });
+  }
+}

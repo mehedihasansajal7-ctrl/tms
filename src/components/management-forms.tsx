@@ -116,3 +116,21 @@ export function VehicleCreateForm({ types }: { types: { id: string; name: string
     </form>
   );
 }
+
+export function VehicleTypeCreateForm() {
+  const router = useRouter();
+  const { error, busy, submit } = useCreate("/api/vehicle-types", () => router.refresh());
+  const [f, setF] = useState({ name: "", capacity: "3" });
+
+  return (
+    <form className="rounded-lg border border-slate-200 bg-white p-4" onSubmit={(e) => { e.preventDefault(); submit({ name: f.name.toUpperCase(), capacity: Number(f.capacity) }); }}>
+      <h3 className="mb-3 text-sm font-semibold">Add vehicle type</h3>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div><label className={label}>Name</label><input className={input} required placeholder="SMALL / MEDIUM / LARGE" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></div>
+        <div><label className={label}>Capacity (seats)</label><input className={input} type="number" min={1} required value={f.capacity} onChange={(e) => setF({ ...f, capacity: e.target.value })} /></div>
+      </div>
+      {error && <div className="mt-2 text-sm text-red-600">{error}</div>}
+      <button type="submit" disabled={busy} className={`${btn} mt-3 bg-indigo-600 text-white hover:bg-indigo-700`}>Create</button>
+    </form>
+  );
+}

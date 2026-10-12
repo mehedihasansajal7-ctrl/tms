@@ -1,6 +1,7 @@
 import AppShell from "@/components/app-shell";
 import StatusBadge from "@/components/status-badge";
 import { DriverCreateForm } from "@/components/management-forms";
+import { StatusToggleButton } from "@/components/status-actions";
 import { requireAdminPage } from "@/lib/guards";
 import { listDrivers } from "@/modules/drivers/driver.service";
 import { formatDate } from "@/lib/format";
@@ -26,6 +27,7 @@ export default async function AdminDrivers() {
                 <th className="px-4 py-3">Expiry</th>
                 <th className="px-4 py-3">Account</th>
                 <th className="px-4 py-3">Operational</th>
+                <th className="px-4 py-3">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -37,6 +39,7 @@ export default async function AdminDrivers() {
                   <td className="px-4 py-3 text-slate-600">{formatDate(d.licenseExpiry)}</td>
                   <td className="px-4 py-3"><StatusBadge status={d.status} /></td>
                   <td className="px-4 py-3"><StatusBadge status={d.operationalStatus} /></td>
+                  <td className="px-4 py-3"><StatusToggleButton url={`/api/drivers/${d.id}`} current={d.status} /></td>
                 </tr>
               ))}
             </tbody>

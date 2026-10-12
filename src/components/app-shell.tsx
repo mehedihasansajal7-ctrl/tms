@@ -20,6 +20,7 @@ function navFor(role: string, kind: string): NavItem[] {
       { href: "/admin/reports", label: "Reports" },
       { href: "/admin/imports", label: "Bulk Upload" },
       { href: "/admin/audit", label: "Audit Log" },
+      { href: "/admin/search", label: "Search" },
     ];
   }
   if (kind === "driver") {
@@ -65,8 +66,14 @@ export default async function AppShell({ active, children }: { active: string; c
             <span className="text-lg font-bold text-slate-900">TMS</span>
           </div>
           <div className="ml-auto flex items-center gap-4">
+            {session?.role === "ADMIN" && (
+              <form method="GET" action="/admin/search" className="hidden lg:block">
+                <input name="q" placeholder="Search…" className="w-44 rounded-md border border-slate-300 px-2 py-1.5 text-sm" />
+              </form>
+            )}
             <NotificationBell />
             <div className="hidden text-sm text-slate-700 sm:block">{session?.name}</div>
+            <Link href="/change-password" className="text-sm text-slate-500 hover:text-slate-800">Change password</Link>
             <LogoutButton />
           </div>
         </header>

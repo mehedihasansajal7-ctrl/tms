@@ -1,6 +1,7 @@
 import { handle, json } from "@/lib/api";
 import { requireAdmin } from "@/lib/rbac";
 import { requireSession } from "@/lib/session";
+import { normalizeRows, toCsv, toExcelBuffer } from "@/lib/csv";
 import {
   getRequestsReport,
   getVehicleUtilization,
@@ -20,29 +21,60 @@ export const GET = handle(async (req, ctx) => {
   const sp = new URL(req.url).searchParams;
   const from = sp.get("from") ? new Date(sp.get("from")!) : new Date(Date.now() - 30 * 86400000);
   const to = sp.get("to") ? new Date(sp.get("to")!) : new Date();
+  const format = sp.get("format");
 
+  let data: unknown;
   switch (type) {
     case "requests":
-      return json(await getRequestsReport(from, to, (sp.get("groupBy") as "day" | "month" | "status") ?? "status"));
+      data = await getRequestsReport(from, to, (sp.get("groupBy") as "day" | "month" | "status") ?? "status");
+      break;
     case "vehicle-utilization":
-      return json(await getVehicleUtilization(from, to));
+      data = await getVehicleUtilization(from, to);
+      break;
     case "driver-trips":
-      return json(await getDriverTripCounts(from, to));
+      data = await getDriverTripCounts(from, to);
+      break;
     case "user-trips":
-      return json(await getUserTripCounts(from, to));
+      data = await getUserTripCounts(from, to);
+      break;
     case "department":
-      return json(await getDepartmentReport(from, to));
+      data = await getDepartmentReport(from, to);
+      break;
     case "vehicle-type":
-      return json(await getVehicleTypeUsage(from, to));
+      data = await getVehicleTypeUsage(from, to);
+      break;
     case "cancellation":
-      return json(await getCancellationReport(from, to));
+      data = await getCancellationReport(from, to);
+      break;
     case "rejection":
-      return json(await getRejectionReport(from, to));
+      data = await getRejectionReport(from, to);
+      break;
     case "alternative":
-      return json(await getAlternativeAssignmentReport(from, to));
+      data = await getAlternativeAssignmentReport(from, to);
+      break;
     case "driver-availability":
-      return json(await getDriverAvailabilityReport());
+      data = await getDriverAvailabilityReport();
+      break;
     default:
       return json({ error: "Unknown report type" }, 404);
   }
+
+  const rows = normalizeRows(data);
+  if (format === "csv") {
+    return new Response(new Uint8Array(Buffer.from("\uFEFF" + toCsv(rows), "utf-8")), {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="${type}-report.csv"`,
+      },
+    });
+  }
+  if (format === "xlsx") {
+    return new Response(new Uint8Array(toExcelBuffer(rows)), {
+      headers: {
+        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Content-Disposition": `attachment; filename="${type}-report.xlsx"`,
+      },
+    });
+  }
+  return json(data);
 });

@@ -1,6 +1,7 @@
 import AppShell from "@/components/app-shell";
 import StatusBadge from "@/components/status-badge";
 import { UserCreateForm } from "@/components/management-forms";
+import { StatusToggleButton } from "@/components/status-actions";
 import { requireAdminPage } from "@/lib/guards";
 import { listUsers } from "@/modules/users/user.service";
 import Link from "next/link";
@@ -33,6 +34,7 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
                 <th className="px-4 py-3">Department</th>
                 <th className="px-4 py-3">Role</th>
                 <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -44,6 +46,7 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
                   <td className="px-4 py-3 text-slate-600">{u.department ?? "—"}</td>
                   <td className="px-4 py-3"><StatusBadge status={u.role} /></td>
                   <td className="px-4 py-3"><StatusBadge status={u.status} /></td>
+                  <td className="px-4 py-3"><StatusToggleButton url={`/api/users/${u.id}`} current={u.status} /></td>
                 </tr>
               ))}
             </tbody>
