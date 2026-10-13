@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { sendEmail } from "./email";
 
 interface NotifyInput {
   userId?: string | null;
@@ -10,9 +11,8 @@ interface NotifyInput {
   refId?: string | null;
 }
 
-// Create an in-app notification for a user and/or driver.
-// The service is intentionally a thin wrapper so email/SMS/WhatsApp providers
-// can be added later without touching call sites.
+// Create an in-app notification for a user and/or driver, and (best-effort)
+// email the recipient. Email is fire-and-forget so it never blocks the response.
 export async function notify(input: NotifyInput) {
   if (!input.userId && !input.driverId) return;
   await prisma.notification.create({
@@ -26,6 +26,23 @@ export async function notify(input: NotifyInput) {
       refId: input.refId ?? null,
     },
   });
+
+  // Resolve the recipient's email and send (non-blocking).
+  void (async () => {
+    try {
+      let email: string | null = null;
+      if (input.userId) {
+        const u = await prisma.user.findUnique({ where: { id: input.userId }, select: { email: true } });
+        email = u?.email ?? null;
+      } else if (input.driverId) {
+        const d = await prisma.driver.findUnique({ where: { id: input.driverId }, select: { email: true } });
+        email = d?.email ?? null;
+      }
+      if (email) await sendEmail(email, input.title, input.message);
+    } catch {
+      // ignore email errors — in-app notification already persisted
+    }
+  })();
 }
 
 // Notify every active admin (used for "pending action" style alerts).
