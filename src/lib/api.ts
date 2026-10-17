@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { ZodError } from "zod";
 import { isAppError } from "./errors";
 
 export function json(data: unknown, init?: number | ResponseInit) {
@@ -7,7 +8,7 @@ export function json(data: unknown, init?: number | ResponseInit) {
 
 export type Handler = (req: Request, ctx: { params: Promise<Record<string, string>> }) => Promise<Response>;
 
-// Wrap a route handler: catches AppError → clean JSON, unknown → 500.
+// Wrap a route handler: AppError → its status, ZodError → 400, unknown → 500.
 export function handle(fn: Handler): Handler {
   return async (req, ctx) => {
     try {
@@ -15,6 +16,13 @@ export function handle(fn: Handler): Handler {
     } catch (e) {
       if (isAppError(e)) {
         return NextResponse.json({ error: e.message, code: e.code, details: e.details }, { status: e.status });
+      }
+      if (e instanceof ZodError) {
+        const first = e.issues[0];
+        return NextResponse.json(
+          { error: first?.message ?? "Invalid input", code: "VALIDATION", details: e.issues },
+          { status: 400 },
+        );
       }
       console.error("[api]", e);
       return NextResponse.json({ error: "Internal server error" }, { status: 500 });

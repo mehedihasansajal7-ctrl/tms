@@ -330,3 +330,17 @@ model Sequence {
   key   String @id
   value Int    @default(0)
 }
+
+// Self-service password reset tokens (hashed; single-use; expiring).
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  email     String
+  kind      String // USER | DRIVER
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email])
+  @@index([expiresAt])
+}
