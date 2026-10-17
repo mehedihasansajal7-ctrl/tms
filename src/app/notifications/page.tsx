@@ -21,10 +21,13 @@ export default function NotificationsPage() {
     fetch("/api/notifications")
       .then((r) => r.json())
       .then((d) => setItems(d.notifications ?? []))
+      .catch(() => setItems([]))
       .finally(() => setLoading(false));
   }
 
-  useEffect(load, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   async function markRead(id: string) {
     await fetch(`/api/notifications/${id}/read`, { method: "POST" });

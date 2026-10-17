@@ -25,7 +25,12 @@ export function normalizeRows(data: unknown): Record<string, unknown>[] {
     return data.map((item) => (item && typeof item === "object" ? flatten(item as Record<string, unknown>) : { value: toPlain(item) }));
   }
   if (data && typeof data === "object") {
-    return Object.entries(data as Record<string, unknown>).map(([k, v]) =>
+    const obj = data as Record<string, unknown>;
+    // Grouped report shape: { groupBy, total, rows: { key: value } } → clean key/value table.
+    if (obj.rows && typeof obj.rows === "object" && !Array.isArray(obj.rows)) {
+      return Object.entries(obj.rows as Record<string, unknown>).map(([k, v]) => ({ key: k, value: toPlain(v) }));
+    }
+    return Object.entries(obj).map(([k, v]) =>
       v && typeof v === "object" && !Array.isArray(v)
         ? { key: k, ...flatten(v as Record<string, unknown>) }
         : { label: k, value: toPlain(v) },

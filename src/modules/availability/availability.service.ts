@@ -135,14 +135,14 @@ export async function getRequestAvailability(requestId: string) {
   const { startDateTime, endDateTime, passengerCount } = request;
   const allTypes = await prisma.vehicleType.findMany({ where: { active: true }, orderBy: { capacity: "asc" } });
   const allVehicles = await prisma.vehicle.findMany({
-    include: { vehicleType: true, bookings: { where: { status: "ACTIVE" }, select: { startDateTime: true, endDateTime: true, request: { select: { requestNumber: true } } } } },
+    include: { vehicleType: true, bookings: { where: { status: "ACTIVE" }, select: { startDateTime: true, endDateTime: true, requestId: true } } },
   });
   const allDrivers = await prisma.driver.findMany({
     include: { assignments: { where: { status: "ACTIVE" }, select: { startDateTime: true, endDateTime: true } } },
   });
 
   const vehicles = allVehicles.map((v) => {
-    const conflicts = v.bookings.filter((b) => rangesOverlap(b.startDateTime, b.endDateTime, startDateTime, endDateTime));
+    const conflicts = v.bookings.filter((b) => b.requestId !== request.id && rangesOverlap(b.startDateTime, b.endDateTime, startDateTime, endDateTime));
     const fits = v.vehicleType.capacity >= passengerCount;
     const isLarger = v.vehicleType.capacity > request.requestedType.capacity;
     return {
