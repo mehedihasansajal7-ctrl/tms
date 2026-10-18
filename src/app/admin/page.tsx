@@ -21,6 +21,26 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+function BarChart({ title, data }: { title: string; data: { label: string; value: number; color: string }[] }) {
+  const max = Math.max(1, ...data.map((d) => d.value));
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-4">
+      <h2 className="mb-3 text-sm font-semibold text-slate-900">{title}</h2>
+      <div className="space-y-2">
+        {data.map((d) => (
+          <div key={d.label} className="flex items-center gap-3 text-sm">
+            <span className="w-24 shrink-0 text-slate-500">{d.label}</span>
+            <div className="h-3 flex-1 overflow-hidden rounded bg-slate-100">
+              <div className={`h-3 rounded ${d.color}`} style={{ width: `${(d.value / max) * 100}%` }} />
+            </div>
+            <span className="w-8 text-right font-medium text-slate-700">{d.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default async function AdminDashboard() {
   await requireAdminPage();
   const d = await getDashboard();
@@ -60,6 +80,19 @@ export default async function AdminDashboard() {
           <Stat label="Cancelled" value={d.requestCounts.cancelled} />
           <Stat label="Rejected" value={d.requestCounts.rejected} />
         </Section>
+
+        <BarChart
+          title="Requests by status"
+          data={[
+            { label: "Pending", value: d.requestCounts.pending, color: "bg-amber-500" },
+            { label: "Approved", value: d.requestCounts.approved, color: "bg-blue-500" },
+            { label: "Assigned", value: d.requestCounts.assigned, color: "bg-indigo-500" },
+            { label: "On Trip", value: d.requestCounts.onTrip, color: "bg-emerald-500" },
+            { label: "Completed", value: d.requestCounts.completed, color: "bg-slate-400" },
+            { label: "Cancelled", value: d.requestCounts.cancelled, color: "bg-red-500" },
+            { label: "Rejected", value: d.requestCounts.rejected, color: "bg-rose-500" },
+          ]}
+        />
 
         <Section title="Vehicles">
           <Stat label="Available" value={d.vehicleCounts.available} />

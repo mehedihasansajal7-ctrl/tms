@@ -31,14 +31,17 @@ export async function notify(input: NotifyInput) {
   void (async () => {
     try {
       let email: string | null = null;
+      let enabled = true;
       if (input.userId) {
-        const u = await prisma.user.findUnique({ where: { id: input.userId }, select: { email: true } });
+        const u = await prisma.user.findUnique({ where: { id: input.userId }, select: { email: true, emailNotifications: true } });
         email = u?.email ?? null;
+        enabled = u?.emailNotifications ?? true;
       } else if (input.driverId) {
-        const d = await prisma.driver.findUnique({ where: { id: input.driverId }, select: { email: true } });
+        const d = await prisma.driver.findUnique({ where: { id: input.driverId }, select: { email: true, emailNotifications: true } });
         email = d?.email ?? null;
+        enabled = d?.emailNotifications ?? true;
       }
-      if (email) await sendEmail(email, input.title, input.message);
+      if (email && enabled) await sendEmail(email, input.title, input.message);
     } catch {
       // ignore email errors — in-app notification already persisted
     }

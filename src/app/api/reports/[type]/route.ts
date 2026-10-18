@@ -2,6 +2,7 @@ import { handle, json } from "@/lib/api";
 import { requireAdmin } from "@/lib/rbac";
 import { requireSession } from "@/lib/session";
 import { normalizeRows, toCsv, toExcelBuffer } from "@/lib/csv";
+import { renderTablePdf } from "@/lib/pdf";
 import {
   getRequestsReport,
   getVehicleUtilization,
@@ -73,6 +74,15 @@ export const GET = handle(async (req, ctx) => {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "Content-Disposition": `attachment; filename="${type}-report.xlsx"`,
+      },
+    });
+  }
+  if (format === "pdf") {
+    const pdf = await renderTablePdf(`${type.replace(/-/g, " ")} report`, rows);
+    return new Response(new Uint8Array(pdf), {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="${type}-report.pdf"`,
       },
     });
   }

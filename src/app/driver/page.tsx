@@ -2,6 +2,7 @@ import AppShell from "@/components/app-shell";
 import StatusBadge from "@/components/status-badge";
 import DriverAvailability from "@/components/driver-availability";
 import DriverTripActions from "@/components/driver-trip-actions";
+import DriverReportIssue from "@/components/driver-report-issue";
 import { requireDriverPage } from "@/lib/guards";
 import { getDriver } from "@/modules/drivers/driver.service";
 import { prisma } from "@/lib/prisma";
@@ -42,6 +43,8 @@ export default async function DriverDashboard() {
         </div>
 
         <DriverAvailability status={driver.operationalStatus} />
+
+        <DriverReportIssue />
 
         {current && (
           <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/toast";
 
 type Mode =
   | "none"
@@ -45,6 +46,7 @@ export default function RequestActions({
   };
 }) {
   const router = useRouter();
+  const { toast } = useToast();
   const [mode, setMode] = useState<Mode>("none");
   const [reason, setReason] = useState("");
   const [comment, setComment] = useState("");
@@ -74,9 +76,12 @@ export default function RequestActions({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Action failed");
       setMode("none");
+      toast("success", "Done");
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Action failed");
+      const msg = e instanceof Error ? e.message : "Action failed";
+      setError(msg);
+      toast("error", msg);
     } finally {
       setBusy(false);
     }

@@ -12,7 +12,7 @@ export async function getDashboard() {
   const todayStart = startOfDay(now);
   const todayEnd = endOfDay(now);
 
-  const [requests, vehicles, drivers, todayRequests] = await Promise.all([
+  const [requests, vehicles, drivers, todayRequests, licenseAlerts] = await Promise.all([
     prisma.transportRequest.findMany({
       select: { status: true, startDateTime: true },
     }),
@@ -25,6 +25,11 @@ export async function getDashboard() {
     prisma.transportRequest.findMany({
       where: { startDateTime: { gte: todayStart, lte: todayEnd } },
       select: { status: true, startDateTime: true },
+    }),
+    prisma.driver.findMany({
+      where: { status: "ACTIVE", licenseExpiry: { not: null, lte: new Date(now.getTime() + 30 * 86400000) } },
+      select: { id: true, name: true, licenseExpiry: true },
+      orderBy: { licenseExpiry: "asc" },
     }),
   ]);
 
@@ -79,7 +84,12 @@ export async function getDashboard() {
   const awaiting = drivers.filter((d) => d.operationalStatus === DRIVER_OPERATIONAL_STATUS.AWAITING_CONFIRMATION).length;
   if (awaiting > 0) alerts.push({ type: "DRIVER_AWAITING_CONFIRMATION", message: `${awaiting} driver(s) awaiting availability confirmation` });
 
-  return { requestCounts, todayCounts, vehicleCounts, driverCounts, alerts };
+  for (const d of licenseAlerts) {
+    const days = Math.ceil((new Date(d.licenseExpiry!).getTime() - now.getTime()) / 86400000);
+    alerts.push({ type: "LICENSE_EXPIRY", message: `${d.name}'s driving licence expires in ${days} day(s)` });
+  }
+
+  return { requestCounts, todayCounts, vehicleCounts, driverCounts, alerts, licenseAlerts };
 }
 
 // ---------------------------------------------------------------------------

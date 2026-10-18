@@ -69,7 +69,7 @@ export default function ReportsViewer() {
     }
   }
 
-  function exportUrl(format: "csv" | "xlsx") {
+  function exportUrl(format: "csv" | "xlsx" | "pdf") {
     const params = new URLSearchParams({ format });
     if (from) params.set("from", from);
     if (to) params.set("to", to);
@@ -101,6 +101,7 @@ export default function ReportsViewer() {
         </button>
         <a href={exportUrl("csv")} download className="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50">CSV</a>
         <a href={exportUrl("xlsx")} download className="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50">Excel</a>
+        <a href={exportUrl("pdf")} download className="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50">PDF</a>
       </div>
 
       <div className="rounded-lg border border-slate-200 bg-white p-4">

@@ -26,6 +26,7 @@ model User {
   designation  String?
   role         String   @default("USER") // ADMIN | USER
   status       String   @default("ACTIVE") // ACTIVE | INACTIVE
+  emailNotifications Boolean @default(true)
   passwordHash String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -49,6 +50,7 @@ model Driver {
   licenseExpiry     DateTime?
   status            String   @default("ACTIVE") // ACTIVE | INACTIVE
   operationalStatus String   @default("AWAITING_CONFIRMATION") // AVAILABLE | UNAVAILABLE | AWAITING_CONFIRMATION
+  emailNotifications Boolean @default(true)
   passwordHash      String
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt

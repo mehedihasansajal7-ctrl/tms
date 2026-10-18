@@ -34,6 +34,12 @@ export default async function AdminRequests({
             </select>
             <input name="q" defaultValue={q ?? ""} placeholder="Request ID…" className="rounded-md border border-slate-300 px-2 py-1.5 text-sm" />
             <button type="submit" className="rounded-md bg-slate-800 px-3 py-1.5 text-sm text-white">Filter</button>
+            <a
+              href={`/api/requests/export?${status ? `status=${status}` : ""}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50"
+            >
+              Export CSV
+            </a>
           </form>
         </div>
 
