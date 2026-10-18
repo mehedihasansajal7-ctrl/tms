@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { REQUEST_STATUS, VEHICLE_STATUS, DRIVER_OPERATIONAL_STATUS } from "@/lib/constants";
 import { rangesOverlap } from "@/lib/overlap";
-import { startOfDay, endOfDay } from "@/lib/format";
+import { startOfDay, endOfDay, dateKey, monthKey } from "@/lib/format";
 
 // ---------------------------------------------------------------------------
 // Dashboard rollup (spec §48)
@@ -110,10 +110,7 @@ export async function getRequestsReport(from: Date, to: Date, groupBy: "day" | "
 
   const buckets: Record<string, number> = {};
   for (const r of rows) {
-    const key =
-      groupBy === "day"
-        ? `${r.startDateTime.getFullYear()}-${String(r.startDateTime.getMonth() + 1).padStart(2, "0")}-${String(r.startDateTime.getDate()).padStart(2, "0")}`
-        : `${r.startDateTime.getFullYear()}-${String(r.startDateTime.getMonth() + 1).padStart(2, "0")}`;
+    const key = groupBy === "day" ? dateKey(r.startDateTime) : monthKey(r.startDateTime);
     buckets[key] = (buckets[key] || 0) + 1;
   }
   return { groupBy, total: rows.length, rows: buckets };
