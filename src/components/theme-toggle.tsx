@@ -8,6 +8,8 @@ export default function ThemeToggle() {
   useEffect(() => {
     const saved = localStorage.getItem("tms-theme");
     const isDark = saved === "dark";
+    // Applying the saved theme on mount is intentional; the state mirrors it.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDark(isDark);
     document.documentElement.classList.toggle("dark", isDark);
   }, []);

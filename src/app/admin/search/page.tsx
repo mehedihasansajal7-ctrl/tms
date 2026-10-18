@@ -55,7 +55,7 @@ async function Results({ q }: { q: string }) {
 
   return (
     <div className="space-y-4">
-      {empty && <p className="text-sm text-slate-400">No results for "{q}".</p>}
+      {empty && <p className="text-sm text-slate-400">No results for &ldquo;{q}&rdquo;.</p>}
 
       {requests.length > 0 && (
         <div className="rounded-lg border border-slate-200 bg-white p-4">
