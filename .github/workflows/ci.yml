@@ -46,6 +46,9 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate
 
+      - name: Generate Next.js route types
+        run: npx next typegen
+
       - name: Apply migrations
         run: npx prisma migrate deploy
 
